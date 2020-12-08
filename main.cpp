@@ -3,12 +3,17 @@
 #include <libnet.h>
 #include <string.h>
 #include <vector>
+#include <string>
 
 using namespace std;
 typedef struct ss{
     uint8_t a[6];
 }ss;
+typedef struct sa{
+    char a[100];
+}sa;
 vector<pair<ss,int>> List;
+vector <sa> ess;
 
 void usage() {
     printf("syntax : airodump <interface>\n");
@@ -21,7 +26,7 @@ int find(const u_char* packet, unsigned int length){
     uint8_t* p=(uint8_t*)packet;
     ss bssid;
     int beacon;
-    char essid[100];
+    sa essid;
     int radio_len=p[2];
     if(length<40){
         return 0;
@@ -41,29 +46,37 @@ int find(const u_char* packet, unsigned int length){
             break;
         }
     }     
+    memcpy(essid.a,p+radio_len+38,p[radio_len+37]);
+
     if(check==1){
         pair<ss,int> pair=make_pair(bssid,beacon);
         List.push_back(pair);
+        ess.push_back(essid);
+
     }
 
-    for(int i=0;i<6;i++){
-        printf("%02x",p[radio_len+16+i]);
-        if(i!=5){
-            printf(":");
-        }
-    }
-    if(beacon<10){
-        printf("  %d          ",beacon);
-    }
-    else{
-        printf("  %d         ",beacon);        
-    }
-    memcpy(essid,p+radio_len+38,p[radio_len+37]);
-    printf("%s",essid);
-    printf("\n");
     return 0;
 }
 
+int printit(){
+    for(int j=0;j<List.size();j++){
+        for(int i=0;i<6;i++){
+            printf("%02x",List[j].first.a[i]);
+            if(i!=5){
+                printf(":");
+            }
+        }
+        if(List[j].second<10){
+            printf("  %d          ",List[j].second);
+        }
+        else{
+            printf("  %d         ",List[j].second);        
+        }
+        printf("%s",ess[j].a);
+        printf("\n");
+    }
+    return 0;
+}
 
 int main(int argc, char*argv[]){
         if (argc != 2) {
@@ -79,8 +92,9 @@ int main(int argc, char*argv[]){
         return -1;
     }
 
-    printf("BSSID              beacons    ESSID\n");
+
     while (true) {
+
         struct pcap_pkthdr* header;
         const u_char* packet;
         int res = pcap_next_ex(handle, &header, &packet);
@@ -90,7 +104,11 @@ int main(int argc, char*argv[]){
             break;
         }
         find(packet, header->len);
+        printf("BSSID              beacons    ESSID\n");
+        printit();
+        printf("-----------------------------------\n");
     }
+
 
     pcap_close(handle);
 }
