@@ -22,13 +22,14 @@ int find(const u_char* packet, unsigned int length){
     ss bssid;
     int beacon;
     char essid[100];
+    int radio_len=p[2];
     if(length<40){
         return 0;
     }
-    if(p[24]!=0x80){
+    if(p[radio_len]!=0x80){
         return 0;
     }
-    memcpy(bssid.a,p+40,6);
+    memcpy(bssid.a,p+radio_len+16,6);
     beacon=0;
     int check=1;
 
@@ -46,7 +47,7 @@ int find(const u_char* packet, unsigned int length){
     }
 
     for(int i=0;i<6;i++){
-        printf("%02x",p[40+i]);
+        printf("%02x",p[radio_len+16+i]);
         if(i!=5){
             printf(":");
         }
@@ -57,7 +58,7 @@ int find(const u_char* packet, unsigned int length){
     else{
         printf("  %d         ",beacon);        
     }
-    memcpy(essid,p+62,p[61]);
+    memcpy(essid,p+radio_len+38,p[radio_len+37]);
     printf("%s",essid);
     printf("\n");
     return 0;
